@@ -1,12 +1,14 @@
-package main 
+package main
 
 import (
 	"context"
 	"encoding/json"
-	"log"
 	pb "github.com/mesment/mirco/consignment-service/proto/consignment"
-	"google.golang.org/grpc"
+	"github.com/micro/go-micro/client"
+	"github.com/micro/go-micro/cmd"
 	"io/ioutil"
+	"log"
+	"time"
 )
 
 const (
@@ -29,24 +31,23 @@ func parseJSONFile(filename string) (*pb.Consignment, error){
 
 func main() {
 
-	//连接gRPC服务器
-	conn, err := grpc.Dial(address,grpc.WithInsecure())
-	if err != nil {
-		log.Fatal("connect to server failed,",err)
-	}
+	cmd.Init()
+	c := pb.NewShippingService("go.micro.srv.consignment",client.DefaultClient)
 
-	c := pb.NewShippingServiceClient(conn)
+
 	consignment,err :=parseJSONFile(jsonfile)
 	if err != nil {
 		log.Fatal("parse file failed,",err)
 	}
 	resp,err := c.CreateConsignment(context.Background(),consignment)
 	if err != nil {
-		log.Printf("call CreateConsignment failed")
+		log.Fatalf("call CreateConsignment failed,",err)
+		return
 	}
-	log.Printf("created:%v,",resp.Created)
+	log.Printf("created:%t\n",resp.Created)
 
 
+	time.Sleep(10*time.Second)
 	resp, err = c.GetConsignments(context.Background(),&pb.GetRequest{})
 	if err != nil {
 		log.Fatalf("failed to list consignment %v",err)
